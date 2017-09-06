@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- 设置扫描的包：扫描handler组件 -->
+	<context:component-scan base-package="com.hanvon.survey.component" use-default-filters="false" >
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+		<!-- <context:include-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/> -->
+	</context:component-scan>
+
+	<!-- 配置视图解析器：InternalResourceViewResolver -->
+	<bean id="ViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/"/>
+		<property name="suffix" value=".jsp"/>
+	</bean>
+
+
+	<mvc:default-servlet-handler default-servlet-name="default"/>
+	<!-- 配置mvc:annotation-driven -->
+	<mvc:annotation-driven />
+	 <!-- 可以不用通过控制器跳转页面，可以根据请求path和view-name来跳转页面；一般是跳转到/WEB-INF目录下的页面 -->
+	<mvc:view-controller path="/guest/user/toRegistUI" view-name="guest/user_regist"/>
+	<mvc:view-controller path="/guest/user/toLoginUI" view-name="guest/user_login"/>
+	<mvc:view-controller path="/guest/survey/toSurveyUI" view-name="guest/survey_add"/>
+	<mvc:view-controller path="/guest/survey/queryAllSurvey" view-name="guest/survey_queryAlllist"/>
+	
+	<mvc:view-controller path="/manager/admin/toMainUI" view-name="manager/manager_main"/>
+	<mvc:view-controller path="/manager/admin/toLoginUI" view-name="manager/admin_login"/>
+	
+	<mvc:view-controller path="/manager/auth/toAddUI" view-name="manager/auth_addUI"/>
+	<mvc:view-controller path="/manager/role/toAddUI" view-name="manager/role_addUI"/>
+	<mvc:view-controller path="/manager/admin/toAddUI" view-name="manager/admin_addUI"/>
+	<!-- 系统异常统一处理机制： -->
+	<bean id="simpleMappingExceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<!-- <property name="exceptionAttribute" value="exp"></property> -->
+		<property name="exceptionMappings">
+			<props>
+				<prop key="com.hanvon.survey.e.UserNameAlreadyExistsException">guest/user_regist</prop>
+				<prop key="com.hanvon.survey.e.UserOperationForbiddenException">guest/user_login</prop>
+				<prop key="com.hanvon.survey.e.FileTooLargeException">guest/survey_add</prop>
+				<prop key="com.hanvon.survey.e.FileTypeErrorException">guest/survey_add</prop>
+				<prop key="com.hanvon.survey.e.EditFileTooLargeException">guest/survey_edit</prop>
+				<prop key="com.hanvon.survey.e.EditFileTypeErrorException">guest/survey_edit</prop>
+				<prop key="com.hanvon.survey.e.DeleteSurveyException">error</prop>
+				<prop key="com.hanvon.survey.e.DeleteBagException">error</prop>
+				<prop key="com.hanvon.survey.e.BagOrderDuplicateException">guest/bag_adjust</prop>
+				<prop key="com.hanvon.survey.e.BagEmptyException">error</prop>
+				<prop key="com.hanvon.survey.e.QuestionEmptyException">error</prop>
+				<prop key="com.hanvon.survey.e.UserLoginForbiddenException">guest/user_login</prop>
+				<prop key="com.hanvon.survey.e.AdminLoginForbiddenException">manager/admin_login</prop>
+				<prop key="com.hanvon.survey.e.AdminOperationForbiddenException">manager/admin_login</prop>
+				<prop key="com.hanvon.survey.e.RemoveAuthFailedException">error</prop>
+				<prop key="com.hanvon.survey.e.RemoveRoleFailedException">error</prop>
+				<prop key="com.hanvon.survey.e.RemoveResFailedException">error</prop>
+				<prop key="com.hanvon.survey.e.UserLoginNeededException">error</prop>
+				<prop key="com.hanvon.survey.e.AdminLoginNeededException">error</prop>
+				<prop key="com.hanvon.survey.e.HasNoAuthorityException">error</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- 声明自定义拦截器： -->
+	<mvc:interceptors>
+		<bean id="webBinderInterceptor" class="com.hanvon.survey.interceptors.WebBinderInterceptor"></bean>
+		<bean id="resInterceptor" class="com.hanvon.survey.interceptors.ResInterceptor"/>
+		<bean id="authorityInterceptor" class="com.hanvon.survey.interceptors.AuthorityInterceptor"></bean>
+	</mvc:interceptors>
+	
+	<!-- 文件上传解析器 -->
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding" value="UTF-8"/>
+	</bean>
+	
+
+</beans>

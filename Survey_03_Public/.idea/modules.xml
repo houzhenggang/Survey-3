@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../Survey_01_UI/Survey_01_UI.iml" filepath="$PROJECT_DIR$/../Survey_01_UI/Survey_01_UI.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Survey_02_Component/Survey_02_Component.iml" filepath="$PROJECT_DIR$/../Survey_02_Component/Survey_02_Component.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Survey_03_Public.iml" filepath="$PROJECT_DIR$/Survey_03_Public.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Survey_04_Environment/Survey_04_Environment.iml" filepath="$PROJECT_DIR$/../Survey_04_Environment/Survey_04_Environment.iml" />
+    </modules>
+  </component>
+</project>

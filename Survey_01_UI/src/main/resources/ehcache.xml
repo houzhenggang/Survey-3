@@ -1,0 +1,13 @@
+<ehcache>
+
+    <diskStore path="java.io.tmpdir"/>
+
+    <cache name="surveyCache"
+        maxElementsInMemory="10000"
+        eternal="false"
+        timeToIdleSeconds="300"
+        timeToLiveSeconds="600"
+        overflowToDisk="true"
+        />
+
+</ehcache>

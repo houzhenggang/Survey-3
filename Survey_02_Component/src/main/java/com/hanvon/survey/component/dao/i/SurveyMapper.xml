@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hanvon.survey.component.dao.i.SurveyMapper">
+	<resultMap id="BaseResultMap" type="com.hanvon.survey.entities.guest.Survey">
+		<id column="SURVEY_ID" property="surveyId" jdbcType="INTEGER" />
+		<result column="SURVEY_NAME" property="surveyName" jdbcType="VARCHAR" />
+		<result column="COMPLETED" property="completed" jdbcType="BIT" />
+		<result column="LOGO_PATH" property="logoPath" jdbcType="VARCHAR" />
+		<result column="USER_ID" property="userId" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		guest_survey
+		where SURVEY_ID = #{surveyId,jdbcType=INTEGER}
+	</delete>
+	
+	<insert id="insert" parameterType="com.hanvon.survey.entities.guest.Survey">
+		insert into guest_survey
+		(SURVEY_ID, SURVEY_NAME, COMPLETED,
+		LOGO_PATH, USER_ID)
+		values
+		(#{surveyId,jdbcType=INTEGER}, #{surveyName,jdbcType=VARCHAR},
+		#{completed,jdbcType=BIT},
+		#{logoPath,jdbcType=VARCHAR},
+		#{userId,jdbcType=INTEGER})
+	</insert>
+	
+	<update id="updateByPrimaryKey" parameterType="com.hanvon.survey.entities.guest.Survey">
+		update
+		guest_survey
+		set SURVEY_NAME = #{surveyName,jdbcType=VARCHAR},
+		LOGO_PATH = #{logoPath,jdbcType=VARCHAR},
+		USER_ID = #{userId,jdbcType=INTEGER}
+		where SURVEY_ID = #{surveyId,jdbcType=INTEGER}
+	</update>
+	
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Integer">
+		select SURVEY_ID, SURVEY_NAME, COMPLETED, LOGO_PATH,
+		USER_ID
+		from guest_survey
+		where SURVEY_ID = #{surveyId,jdbcType=INTEGER}
+	</select>
+	
+	<select id="selectAll" resultMap="BaseResultMap">
+		select SURVEY_ID, SURVEY_NAME,
+		COMPLETED, LOGO_PATH, USER_ID
+		from guest_survey
+	</select>
+	
+	<!-- 计算分页总记录数 -->
+	<select id="countSurvey" resultType="int" >
+		select count(*)
+		from guest_survey 		
+		<where>		
+			<if test="userId!=null">USER_ID=#{userId}</if>			
+			and COMPLETED=#{isCompleted}
+		</where> 		
+	</select>
+	
+	<!-- 分页查询调查对象 -->
+	<select id="querySurveyList" resultMap="BaseResultMap">
+		select SURVEY_ID, SURVEY_NAME, COMPLETED, LOGO_PATH, USER_ID
+		from guest_survey 		
+		<where>		
+			<if test="userId!=null">USER_ID=#{userId}</if>			
+			and COMPLETED=#{isCompleted}
+		</where> 
+		order by SURVEY_ID DESC 
+		limit #{index},#{pageSize}	
+	</select>
+	
+	
+	<resultMap id="SurveyDeeplyResultMap" type="Survey">
+		<id column="SURVEY_ID" property="surveyId" jdbcType="INTEGER" />
+		<result column="SURVEY_NAME" property="surveyName" jdbcType="VARCHAR" />
+		<result column="COMPLETED" property="completed" jdbcType="BIT" />
+		<result column="LOGO_PATH" property="logoPath" jdbcType="VARCHAR" />
+		<result column="USER_ID" property="userId" jdbcType="INTEGER" />
+		
+		<collection property="bagSet" column="SURVEY_ID" ofType="Bag">
+			<id column="BAG_ID" property="bagId" jdbcType="INTEGER" />
+			<result column="BAG_NAME" property="bagName" jdbcType="VARCHAR" />
+			<result column="BAG_ORDER" property="bagOrder" jdbcType="INTEGER" />
+			<!-- 如果当前调查下没有包裹存在，不应该封装外键值到包裹对象中，否则，在集合中创建一个空包裹对象； -->
+			<!-- <result column="SURVEY_ID" property="surveyId" jdbcType="INTEGER" /> -->
+			
+			<collection property="questionSet" column="BAG_ID" ofType="Question">
+				<id column="QUESTION_ID" property="questionId" jdbcType="INTEGER" />
+				<result column="QUESTION_NAME" property="questionName" jdbcType="VARCHAR" />
+				<result column="QUESTION_TYPE" property="questionType" jdbcType="INTEGER" />
+				<result column="QUESTION_OPTIONS" property="questionOptions" jdbcType="VARCHAR" />
+				<!-- 如果当前包裹下没有问题对象存在，那么，不应该将包裹外键封装到问题对象中，否则，问题集合中会创建一个空问题对象 -->
+				<!-- <result column="BAG_ID" property="bagId" jdbcType="INTEGER" /> -->
+			</collection>			
+			
+		</collection>		
+	</resultMap>
+	
+	<!-- 深度加载调查对象 -->
+	<select id="getSurveyDeeply" parameterType="int" resultMap="SurveyDeeplyResultMap">
+		SELECT 
+		  s.`SURVEY_ID`,
+		  s.`SURVEY_NAME`,
+		  s.`LOGO_PATH`,
+		  s.`COMPLETED`,
+		  s.`USER_ID`,
+		  
+		  b.`BAG_ID`,
+		  b.`BAG_NAME`,
+		  b.`BAG_ORDER`,
+		  b.`SURVEY_ID`,
+		  
+		  q.`QUESTION_ID`,
+		  q.`QUESTION_NAME`,
+		  q.`QUESTION_OPTIONS`,
+		  q.`QUESTION_TYPE` 
+		FROM
+		  guest_survey s 
+		  LEFT JOIN guest_bag b 
+		    ON s.`SURVEY_ID` = b.`SURVEY_ID` 
+		  LEFT JOIN guest_question q 
+		    ON b.`BAG_ID` = q.`BAG_ID` 
+		WHERE s.survey_id = #{surveyId}
+		ORDER BY s.`SURVEY_ID`,b.`BAG_ORDER` DESC,q.`QUESTION_ID`
+	</select>
+	
+	<!-- 根据调查，删除所有问题 -->
+	<delete id="deleteAllQuestionBySurveyId" parameterType="int">
+		DELETE 
+		FROM
+		  guest_question 
+		WHERE bag_id IN 
+		  (SELECT 
+		    bag_id 
+		  FROM
+		    guest_bag 
+		  WHERE survey_id = #{surveyId})
+				
+	</delete>
+	
+	<!-- 根据调查，删除所有包裹 -->
+	<delete id="deleteAllBagBySurveyId" parameterType="int">
+		DELETE FROM guest_bag WHERE survey_id = #{surveyId}
+	</delete>
+	
+	<update id="updateSurveyStatus">
+		update
+		guest_survey
+		set completed = true 
+		where SURVEY_ID = #{surveyId,jdbcType=INTEGER}
+	</update>
+	
+</mapper>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hanvon.survey.component.dao.i.AdminMapper">
+	<resultMap id="BaseResultMap" type="com.hanvon.survey.entities.manager.Admin">
+		<id column="ADMIN_ID" property="adminId" jdbcType="INTEGER" />
+		<result column="ADMIN_NAME" property="adminName" jdbcType="VARCHAR" />
+		<result column="ADMIN_PWD" property="adminPwd" jdbcType="VARCHAR" />
+		<result column="CODE_ARR_STR" property="codeArrStr" jdbcType="VARCHAR" />
+	</resultMap>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from manager_admin
+		where ADMIN_ID = #{adminId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="com.hanvon.survey.entities.manager.Admin">
+		insert into manager_admin (ADMIN_ID, ADMIN_NAME, ADMIN_PWD,
+		CODE_ARR_STR)
+		values (#{adminId,jdbcType=INTEGER}, #{adminName,jdbcType=VARCHAR},
+		#{adminPwd,jdbcType=VARCHAR},
+		#{codeArrStr,jdbcType=VARCHAR})
+	</insert>
+	<update id="updateByPrimaryKey" parameterType="com.hanvon.survey.entities.manager.Admin">
+		update manager_admin
+		set ADMIN_NAME = #{adminName,jdbcType=VARCHAR},
+		ADMIN_PWD = #{adminPwd,jdbcType=VARCHAR},
+		CODE_ARR_STR = #{codeArrStr,jdbcType=VARCHAR}
+		where ADMIN_ID = #{adminId,jdbcType=INTEGER}
+	</update>
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Integer">
+		select ADMIN_ID, ADMIN_NAME, ADMIN_PWD, CODE_ARR_STR
+		from manager_admin
+		where ADMIN_ID = #{adminId,jdbcType=INTEGER}
+	</select>
+	<select id="selectAll" resultMap="BaseResultMap">
+		select ADMIN_ID, ADMIN_NAME, ADMIN_PWD, CODE_ARR_STR
+		from manager_admin
+	</select>
+
+	<select id="login" resultMap="BaseResultMap">
+		select ADMIN_ID, ADMIN_NAME, ADMIN_PWD, CODE_ARR_STR
+		from manager_admin
+		where ADMIN_NAME=#{adminName} and ADMIN_PWD=#{adminPwdMD5}
+	</select>
+
+
+
+	<select id="getAdminCountByAdminName" resultType="int">
+		select count(*) from manager_admin where admin_name=#{adminName}
+	</select>
+	
+	<select id="getCurrentRoleList" resultType="integer" parameterType="int">
+		select role_id from inner_admin_role where admin_id=#{adminId}
+	</select>
+	
+	
+	<delete id="deleteOldRelationship">
+		delete from inner_admin_role where admin_id=#{adminId}
+	</delete>
+	
+	<insert id="saveNewRelationship">
+		insert into inner_admin_role(admin_id,role_id) values 
+		<foreach collection="roleIdList" item="roleId" separator=",">(#{adminId},#{roleId})</foreach>
+	</insert>
+	
+	
+	
+	<resultMap id="roleResultMap"  type="role">
+		<id column="role_id" property="roleId" jdbcType="INTEGER" />
+		<collection property="authSet" column="role_id" ofType="auth">
+			<id column="auth_id" property="authId" jdbcType="INTEGER" />
+			<collection property="resSet" column="auth_id" ofType="res">
+				<id column="res_id" property="resId" jdbcType="INTEGER" />
+				<!-- <result column="servlet_path" property="servletPath" jdbcType="CHAR" />
+				<result column="public_status" property="publicStatus" jdbcType="BIT" /> -->
+				<result column="res_code" property="resCode" jdbcType="INTEGER" />
+				<result column="res_pos" property="resPos" jdbcType="INTEGER" />
+			</collection>
+		</collection>
+	</resultMap>
+	
+	<select id="getDeeplyRoleSet" parameterType="int" resultMap="roleResultMap">
+		SELECT 
+		   inner_admin_role.`admin_id`,
+		   manager_role.`role_id`,
+		   manager_auth.`auth_id`,
+		   manager_res.`res_id`,
+		   manager_res.`res_code`,
+		   manager_res.`res_pos`  
+		FROM
+		  inner_admin_role 
+		  LEFT JOIN manager_role 
+		    ON inner_admin_role.`role_id` = manager_role.`role_id` 
+		  LEFT JOIN inner_role_auth 
+		    ON manager_role.`role_id` = inner_role_auth.`role_id` 
+		  LEFT JOIN manager_auth 
+		    ON inner_role_auth.`auth_id` = manager_auth.`auth_id` 
+		  LEFT JOIN inner_auth_res 
+		    ON manager_auth.`auth_id` = inner_auth_res.`auth_id` 
+		  LEFT JOIN manager_res 
+		    ON inner_auth_res.`res_id` = manager_res.`res_id` 		
+		WHERE admin_id = #{adminId} ;	
+	</select>
+	
+	
+	<update id="updateCodeArrStr">
+		update manager_admin set code_arr_str = #{codeArrStr} where admin_id=#{adminId}
+	</update>
+	
+	
+	
+	<update id="updateCodeForAdminAll">		
+		<foreach collection="adminAll" item="admin" separator=";">
+			update manager_admin set code_arr_str = #{admin.codeArrStr} where admin_id=#{admin.adminId}
+		</foreach>		
+	</update>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>

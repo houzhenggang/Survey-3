@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hanvon.survey.component.dao.i.ResMapper">
+	<resultMap id="BaseResultMap" type="com.hanvon.survey.entities.manager.Res">
+		<id column="res_id" property="resId" jdbcType="INTEGER" />
+		<result column="servlet_path" property="servletPath" jdbcType="CHAR" />
+		<result column="public_status" property="publicStatus" jdbcType="BIT" />
+		<result column="res_code" property="resCode" jdbcType="INTEGER" />
+		<result column="res_pos" property="resPos" jdbcType="INTEGER" />
+	</resultMap>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from manager_res
+		where res_id = #{resId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="com.hanvon.survey.entities.manager.Res">
+		insert into manager_res (res_id, servlet_path, public_status,
+		res_code, res_pos)
+		values (#{resId,jdbcType=INTEGER}, #{servletPath,jdbcType=CHAR},
+		#{publicStatus,jdbcType=BIT},
+		#{resCode,jdbcType=INTEGER}, #{resPos,jdbcType=INTEGER})
+	</insert>
+	<update id="updateByPrimaryKey" parameterType="com.hanvon.survey.entities.manager.Res">
+		update manager_res
+		set servlet_path = #{servletPath,jdbcType=CHAR},
+		public_status = #{publicStatus,jdbcType=BIT},
+		res_code = #{resCode,jdbcType=INTEGER},
+		res_pos = #{resPos,jdbcType=INTEGER}
+		where res_id = #{resId,jdbcType=INTEGER}
+	</update>
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Integer">
+		select res_id, servlet_path, public_status, res_code, res_pos
+		from manager_res
+		where res_id = #{resId,jdbcType=INTEGER}
+	</select>
+
+
+
+	<select id="selectAll" resultMap="BaseResultMap">
+		select res_id, servlet_path, public_status, res_code, res_pos
+		from manager_res
+	</select>
+	<select id="servletPathExists" parameterType="string" resultType="int">
+		select count(*) from manager_res where servlet_path=#{servletPath}
+	</select>
+	
+	<!-- 数据库中没有记录，max(res_pos)返回null,resultType不能使用int类型，应该使用integer -->
+	<select id="getMaxPos" resultType="integer">
+		select max(res_pos) from manager_res 
+	</select>
+	
+	<select id="getMaxCode" resultType="integer" parameterType="int">
+		select max(res_code) from manager_res where res_pos = #{maxPos}
+	</select>
+	
+	<delete id="deleteBatch">
+		delete from manager_res where res_id in 		
+		<foreach collection="resIdList" item="resId" separator="," open="(" close=")">#{resId}</foreach>		
+	</delete>
+	
+	
+	<update id="updateStatus">
+		update manager_res
+		set public_status = #{finalStatus} 
+		where res_id=#{resId}
+	</update>
+	
+	<select id="getResByServletPath" resultMap="BaseResultMap">
+		select res_id, servlet_path, public_status, res_code, res_pos
+		from manager_res where servlet_path = #{servletPath}
+	</select>
+	
+</mapper>

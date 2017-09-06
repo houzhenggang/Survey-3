@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hanvon.survey.component.dao.i.ResMapper" >
+  <resultMap id="BaseResultMap" type="com.hanvon.survey.entities.manager.Res" >
+    <id column="res_id" property="resId" jdbcType="INTEGER" />
+    <result column="servlet_path" property="servletPath" jdbcType="CHAR" />
+    <result column="res_code" property="resCode" jdbcType="INTEGER" />
+    <result column="res_pos" property="resPos" jdbcType="INTEGER" />
+    <result column="public_status" property="publicStatus" jdbcType="BIT" />
+  </resultMap>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from manager_res
+    where res_id = #{resId,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.hanvon.survey.entities.manager.Res" >
+    insert into manager_res (res_id, servlet_path, res_code, 
+      res_pos, public_status)
+    values (#{resId,jdbcType=INTEGER}, #{servletPath,jdbcType=CHAR}, #{resCode,jdbcType=INTEGER}, 
+      #{resPos,jdbcType=INTEGER}, #{publicStatus,jdbcType=BIT})
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com.hanvon.survey.entities.manager.Res" >
+    update manager_res
+    set servlet_path = #{servletPath,jdbcType=CHAR},
+      res_code = #{resCode,jdbcType=INTEGER},
+      res_pos = #{resPos,jdbcType=INTEGER},
+      public_status = #{publicStatus,jdbcType=BIT}
+    where res_id = #{resId,jdbcType=INTEGER}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select res_id, servlet_path, res_code, res_pos, public_status
+    from manager_res
+    where res_id = #{resId,jdbcType=INTEGER}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap" >
+    select res_id, servlet_path, res_code, res_pos, public_status
+    from manager_res
+  </select>
+</mapper>

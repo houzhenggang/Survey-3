@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hanvon.survey.component.dao.i.BagMapper">
+	<resultMap id="BaseResultMap" type="com.hanvon.survey.entities.guest.Bag">
+		<id column="BAG_ID" property="bagId" jdbcType="INTEGER" />
+		<result column="BAG_NAME" property="bagName" jdbcType="VARCHAR" />
+		<result column="BAG_ORDER" property="bagOrder" jdbcType="INTEGER" />
+		<result column="SURVEY_ID" property="surveyId" jdbcType="INTEGER" />
+	</resultMap>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from guest_bag
+		where BAG_ID = #{bagId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="com.hanvon.survey.entities.guest.Bag" useGeneratedKeys="true" keyProperty="bagId">
+		insert into guest_bag (BAG_ID, BAG_NAME, BAG_ORDER,
+		SURVEY_ID)
+		values (#{bagId,jdbcType=INTEGER}, #{bagName,jdbcType=VARCHAR},
+		#{bagOrder,jdbcType=INTEGER},
+		#{surveyId,jdbcType=INTEGER})
+	</insert>
+	<!-- 更新包裹对象和更新包裹序号，使用同一个方法 -->
+	<update id="updateByPrimaryKey" parameterType="com.hanvon.survey.entities.guest.Bag">
+		update guest_bag
+		<set>
+			<if test="bagName!=null">BAG_NAME = #{bagName,jdbcType=VARCHAR},</if>
+			<if test="bagOrder!=null">BAG_ORDER = #{bagOrder,jdbcType=INTEGER},</if>
+			<if test="surveyId!=null">SURVEY_ID = #{surveyId,jdbcType=INTEGER}</if>		
+		</set>		
+		where BAG_ID = #{bagId,jdbcType=INTEGER}
+	</update>
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Integer">
+		select BAG_ID, BAG_NAME, BAG_ORDER, SURVEY_ID
+		from guest_bag
+		where BAG_ID = #{bagId,jdbcType=INTEGER}
+	</select>
+	<select id="selectAll" resultMap="BaseResultMap">
+		select BAG_ID, BAG_NAME, BAG_ORDER, SURVEY_ID
+		from guest_bag
+	</select>
+	
+	
+	
+	<resultMap id="BagDeeplyResultMap" type="Bag">
+		<id column="BAG_ID" property="bagId" jdbcType="INTEGER" />
+		<result column="BAG_NAME" property="bagName" jdbcType="VARCHAR" />
+		<result column="BAG_ORDER" property="bagOrder" jdbcType="INTEGER" />
+		<result column="SURVEY_ID" property="surveyId" jdbcType="INTEGER" />
+		
+		<collection property="questionSet" column="BAG_ID" ofType="Question">
+			<id column="QUESTION_ID" property="questionId" jdbcType="INTEGER" />
+			<result column="QUESTION_NAME" property="questionName" jdbcType="VARCHAR" />
+			<result column="QUESTION_TYPE" property="questionType" jdbcType="INTEGER" />
+			<result column="QUESTION_OPTIONS" property="questionOptions" jdbcType="VARCHAR" />
+			<!-- <result column="BAG_ID" property="bagId" jdbcType="INTEGER" /> -->
+		</collection>
+		
+	</resultMap>
+	<!-- 深度加载bag对象 -->
+	<select id="getBagDeeply" parameterType="int" resultMap="BagDeeplyResultMap">
+		SELECT 
+			  b.`BAG_ID`,
+			  b.`BAG_NAME`,
+			  b.`BAG_ORDER`,
+			  b.`SURVEY_ID`,
+			  q.`QUESTION_ID`,
+			  q.`QUESTION_NAME`,
+			  q.`QUESTION_OPTIONS`,
+			  q.`QUESTION_TYPE` 
+			FROM
+			  guest_bag b 
+			  LEFT JOIN guest_question q 
+			    ON b.`BAG_ID` = q.`BAG_ID` 
+			WHERE b.bag_id = #{bagId} ;
+	</select>
+	
+	<delete id="deleteCurrentQuestionByBagId" parameterType="int">
+		DELETE 
+			FROM
+			  guest_question 			
+			WHERE bag_id = #{bagId}
+	</delete>
+	
+	<!-- 根据调查id查询它的所有包裹对象；不需要深度加载 -->
+	<select id="queryBagBySurveyId" parameterType="int" resultMap="BaseResultMap">
+		select BAG_ID, BAG_NAME, BAG_ORDER, SURVEY_ID from guest_bag where survey_id=#{surveyId}
+	</select>
+	
+	<!-- MyBatis中执行批量操作，需要指定url的请求参数：allowMultiQueries=true -->
+	<update id="updateBatchBagOrder" parameterType="java.util.List">	
+		<foreach collection="bagList" item="bag" separator=";">
+			UPDATE guest_bag SET bag_order=#{bag.bagOrder} where bag_id=#{bag.bagId}
+		</foreach>
+	</update>
+	
+	<update id="updateRelationshipMove">
+		UPDATE guest_bag SET survey_id=#{surveyId} where bag_id=#{bagId}
+	</update>
+	
+	<!-- allowMultiQueries=true -->
+	<insert id="batchInsertQuestion">
+		<!-- <foreach collection="_parameter"></foreach> -->
+		<foreach collection="questionSet" item="question" separator=";">
+			insert into guest_question (QUESTION_NAME, QUESTION_TYPE,
+				QUESTION_OPTIONS, BAG_ID)
+				values (#{question.questionName,jdbcType=VARCHAR},#{question.questionType,jdbcType=INTEGER},
+				#{question.questionOptions,jdbcType=VARCHAR}, #{question.bagId,jdbcType=INTEGER})
+		</foreach>
+	</insert>
+	
+</mapper>

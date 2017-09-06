@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hanvon.survey.component.dao.i.AnswerMapper">
+	<resultMap id="BaseResultMap" type="com.hanvon.survey.entities.guest.Answer">
+		<id column="ANSWER_ID" property="answerId" jdbcType="INTEGER" />
+		<result column="CONTENT" property="content" jdbcType="VARCHAR" />
+		<result column="UUID" property="uuid" jdbcType="VARCHAR" />
+		<result column="QUESTION_ID" property="questionId" jdbcType="INTEGER" />
+		<result column="SURVEY_ID" property="surveyId" jdbcType="INTEGER" />
+	</resultMap>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from
+		guest_answer
+		where ANSWER_ID = #{answerId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="com.hanvon.survey.entities.guest.Answer">
+		insert into guest_answer
+		(ANSWER_ID, CONTENT, UUID,
+		QUESTION_ID, SURVEY_ID)
+		values
+		(#{answerId,jdbcType=INTEGER}, #{content,jdbcType=VARCHAR},
+		#{uuid,jdbcType=VARCHAR},
+		#{questionId,jdbcType=INTEGER},
+		#{surveyId,jdbcType=INTEGER})
+	</insert>
+	<update id="updateByPrimaryKey" parameterType="com.hanvon.survey.entities.guest.Answer">
+		update
+		guest_answer
+		set CONTENT = #{content,jdbcType=VARCHAR},
+		UUID =
+		#{uuid,jdbcType=VARCHAR},
+		QUESTION_ID = #{questionId,jdbcType=INTEGER},
+		SURVEY_ID = #{surveyId,jdbcType=INTEGER}
+		where ANSWER_ID =
+		#{answerId,jdbcType=INTEGER}
+	</update>
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Integer">
+		select ANSWER_ID, CONTENT, UUID, QUESTION_ID, SURVEY_ID
+		from guest_answer
+		where ANSWER_ID = #{answerId,jdbcType=INTEGER}
+	</select>
+	<select id="selectAll" resultMap="BaseResultMap">
+		select ANSWER_ID, CONTENT,
+		UUID, QUESTION_ID, SURVEY_ID
+		from guest_answer
+	</select>
+
+	<insert id="insertBatchAnswer" parameterType="java.util.List">
+		<foreach collection="answerList" item="answer" separator=";">
+			insert into guest_answer (
+			CONTENT,
+			UUID,
+			QUESTION_ID,
+			SURVEY_ID)
+			values (#{answer.content,jdbcType=VARCHAR},
+			#{answer.uuid,jdbcType=VARCHAR},
+			#{answer.questionId,jdbcType=INTEGER},
+			#{answer.surveyId,jdbcType=INTEGER})
+		</foreach>
+	</insert>
+	
+	<select id="queryTextStatistics" parameterType="int" resultType="string">
+		select CONTENT
+		from guest_answer
+		where question_id=#{questionId}
+	</select>
+
+	<!-- 统计问题被参数次数 -->
+	<select id="getQuestionEngagedCount" parameterType="int" resultType="int">
+		SELECT COUNT(*) FROM guest_answer WHERE question_id=#{questionId}
+	</select>
+	
+	<!-- 统计问题的选项被选中的次数 -->
+	<select id="getOptionEngagedCount" resultType="int">
+		SELECT COUNT(*) FROM guest_answer WHERE question_id=#{questionId} AND CONCAT(",",content,",") LIKE #{paramIndex}	
+	</select>
+
+	<!-- 统计调查被参与的次数 -->
+	<select id="getSurveyEngageCount"  resultType="int">
+		SELECT COUNT(DISTINCT UUID) FROM guest_answer WHERE survey_id= #{surveyId}
+	</select>
+
+	<!-- 获取当前调查的所有答案 -->
+	<select id="getAllAnswerBySurveyId" resultMap="BaseResultMap">
+		select ANSWER_ID, CONTENT,
+		UUID, QUESTION_ID, SURVEY_ID
+		from guest_answer where survey_id=#{surveyId}
+	</select>
+
+</mapper>

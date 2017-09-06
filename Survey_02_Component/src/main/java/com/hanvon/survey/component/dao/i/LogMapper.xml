@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hanvon.survey.component.dao.i.LogMapper">
+	<resultMap id="BaseResultMap" type="com.hanvon.survey.entities.manager.Log">
+		<id column="log_id" property="logId" jdbcType="INTEGER" />
+		<result column="operator" property="operator" jdbcType="CHAR" />
+		<result column="operate_time" property="operateTime" jdbcType="CHAR" />
+		<result column="method_name" property="methodName" jdbcType="CHAR" />
+		<result column="type_name" property="typeName" jdbcType="CHAR" />
+		<result column="method_args" property="methodArgs" jdbcType="VARCHAR" />
+		<result column="method_return_value" property="methodReturnValue" jdbcType="VARCHAR" />
+		<result column="exception_type" property="exceptionType" jdbcType="CHAR" />
+		<result column="exception_message" property="exceptionMessage" jdbcType="CHAR" />
+	</resultMap>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from manager_log
+		where log_id = #{logId,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" >
+		insert into ${tableName} (
+			log_id, 
+			operator, 
+			operate_time,
+			method_name, 
+			type_name, 
+			method_args,
+			method_return_value, 
+			exception_type, 
+			exception_message
+		)
+		values (#{log.logId,jdbcType=INTEGER}, 
+			#{log.operator,jdbcType=CHAR},
+			#{log.operateTime,jdbcType=CHAR},
+			#{log.methodName,jdbcType=CHAR}, 
+			#{log.typeName,jdbcType=CHAR}, 
+			#{log.methodArgs,jdbcType=VARCHAR},
+			#{log.methodReturnValue,jdbcType=VARCHAR}, 
+			#{log.exceptionType,jdbcType=CHAR},
+			#{log.exceptionMessage,jdbcType=CHAR}
+		)
+	</insert>
+	<update id="updateByPrimaryKey" parameterType="com.hanvon.survey.entities.manager.Log">
+		update manager_log
+		set operator = #{operator,jdbcType=CHAR},
+		operate_time = #{operateTime,jdbcType=CHAR},
+		method_name = #{methodName,jdbcType=CHAR},
+		type_name = #{typeName,jdbcType=CHAR},
+		method_args = #{methodArgs,jdbcType=VARCHAR},
+		method_return_value = #{methodReturnValue,jdbcType=VARCHAR},
+		exception_type = #{exceptionType,jdbcType=CHAR},
+		exception_message = #{exceptionMessage,jdbcType=CHAR}
+		where log_id = #{logId,jdbcType=INTEGER}
+	</update>
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Integer">
+		select log_id, operator, operate_time, method_name, type_name, method_args,
+		method_return_value,
+		exception_type, exception_message
+		from manager_log
+		where log_id = #{logId,jdbcType=INTEGER}
+	</select>
+	<select id="selectAll" resultMap="BaseResultMap">
+		select log_id, operator, operate_time, method_name, type_name, method_args,
+		method_return_value,
+		exception_type, exception_message
+		from manager_log
+	</select>
+	
+	
+	<update id="createTable">
+		<!-- CREATE TABLE IF NOT EXISTS #{tableName} LIKE manager_log -->
+		CREATE TABLE IF NOT EXISTS ${tableName} LIKE survey_main_160808.manager_log
+	</update>
+	
+	<select id="getLogTables" resultType="string">
+		SELECT 
+		  table_name 
+		FROM
+		  `information_schema`.`TABLES` 		
+		WHERE table_schema = 'survey_log_160808' ;
+	</select>
+	
+	<select id="getTotalCountForLog" resultType="int">
+		<!-- SELECT COUNT(*) FROM (
+		SELECT * FROM  auto_log_2016_12 UNION 
+			SELECT * FROM  auto_log_2017_01 UNION 
+			SELECT * FROM  auto_log_2017_02 UNION 
+			SELECT * FROM  auto_log_2017_03 ) alias -->			
+		SELECT COUNT(*) FROM 
+			<foreach collection="logTables" item="tableName" open="(" close=") alias" separator=" UNION ">				
+				SELECT * FROM ${tableName}
+			</foreach>			
+	</select>
+	
+	<select id="getPage" resultMap="BaseResultMap">
+		SELECT 
+			`operator`,`operate_time`,
+			`method_name`,`type_name`,
+			`method_args`,`method_return_value`,
+			`exception_type`,`exception_message` 
+		 FROM 
+		 <foreach collection="logTables" item="tableName" open="(" close=") alias" separator=" UNION ">				
+				SELECT * FROM ${tableName}
+			</foreach>
+		  LIMIT #{index},#{pageSize}
+	</select>
+	
+	
+</mapper>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- 扫描组件Bean对象:排除handler组件，剩余都进行管理 -->
+	<context:component-scan base-package="com.hanvon.survey.component">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+	</context:component-scan>
+
+
+	<!-- 加载外部属性配置文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties"/>
+	
+	<!-- 配置C3P0数据源 -->
+	<bean id="dataSourceTemplate" class="com.mchange.v2.c3p0.ComboPooledDataSource" abstract="true">
+		<property name="driverClass" value="${jdbc.driver}"/>
+		<property name="user" value="${jdbc.user}"/>
+		<property name="password" value="${jdbc.password}"/>
+	</bean>
+	
+	<!-- 主数据源:survey-->
+	<bean id="dataSourceMain" parent="dataSourceTemplate">
+		<property name="jdbcUrl" value="${jdbc.url}"/>
+	</bean>
+	
+	<!-- 日志数据源：survey_log库 -->
+	<bean id="dataSourcelog" parent="dataSourceTemplate">
+		<property name="jdbcUrl" value="${jdbc.url.log}"/>
+	</bean>
+	
+	<!-- 路由器数据源Bean的声明 -->
+	<bean id="logRouterDataSource" class="com.hanvon.survey.log.router.LogRouterDataSource">
+		<!-- 由路由器数据源管理我们自己的多个数据源 -->
+		<property name="targetDataSources">
+			<map>
+				<!-- key:自定义的数据源名称，用于绑定具体的数据源对象 -->
+				<entry key="DATA_SOURCE_MAIN" value-ref="dataSourceMain"/>
+				<!-- value-ref:具体数据源引用 -->
+				<entry key="DATA_SOURCE_LOG" value-ref="dataSourcelog"/>
+			</map>
+		</property>
+		<!-- 默认数据源设置：在访问数据库时，如果不指定key时，路由器数据源采用默认的数据源来连接数据库 -->
+		<property name="defaultTargetDataSource" ref="dataSourceMain"/>
+	</bean>
+	
+	
+	
+	<!-- 配置SQLSessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 装配数据源 -->
+		<property name="dataSource" ref="logRouterDataSource"/>
+		<!-- 指定MyBatis自身配置文件的位置 -->
+		<property name="configLocation" value="classpath:MyBaits-config.xml"/>
+		<!-- typeAliasesPackage属性value值：可以指定父包，自动扫描子包 -->
+		<!-- 实体类的位置 -->
+		<property name="typeAliasesPackage" value="com.hanvon.survey.entities"/>
+		<!-- <property name="mapperLocations"></property> -->
+	</bean>
+	
+	<!-- 扫描Mapper映射配置 -->
+	<bean id="mapperScannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.hanvon.survey.component.dao.i"/>
+	</bean>
+			
+	<!-- 配置事务管理器:AOP中切面类 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="logRouterDataSource"/>
+	</bean>
+		
+	<!-- ①配置事务切面 -->
+	<aop:config>
+		<!-- 声明切入点表达式 -->
+		<aop:pointcut expression="execution(* *..*Service.*(..))" id="txPointcut"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut" order="50"/>
+	</aop:config>
+
+	<!-- ②配置事务通知 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<!--  isolation="DEFAULT" ： 使用数据库默认事务隔离级别：MySQL 4 ； Oracle 2  -->
+			<!-- 增，删，改操作都需要增加事务，而且，具体情况使用不同隔离级别  propagation="REQUIRES_NEW"-->
+			<tx:method name="save*" rollback-for="java.lang.Exception" propagation="REQUIRED"/>
+			<tx:method name="update*" rollback-for="java.lang.Exception" propagation="REQUIRED" />
+			<tx:method name="delete*" rollback-for="java.lang.Exception" propagation="REQUIRED"/>
+			<tx:method name="regist*" rollback-for="java.lang.Exception" propagation="REQUIRED"/>
+			<tx:method name="batch*" rollback-for="java.lang.Exception" propagation="REQUIRED"/>
+			<tx:method name="dispatcher*" rollback-for="java.lang.Exception" propagation="REQUIRED"/>
+			<tx:method name="create*" rollback-for="java.lang.Exception" propagation="REQUIRED"/>
+			
+			<!-- 查询数据设置read-only="true"，可以提高系统性能 -->
+			<tx:method name="get*" read-only="true"/>
+			<tx:method name="query*" read-only="true"/>
+			<tx:method name="login*" read-only="true"/>
+			<tx:method name="servletPathExists" read-only="true"/>
+			<tx:method name="existsUserName" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>	
+	
+	<!-- 日志切面对象 -->
+	<bean id="logRecorder" class="com.hanvon.survey.log.aspect.LogRecorder">
+		<!-- 不需要手动注入logService对象，采用@Autowired -->
+	</bean>
+	<!-- 日志切面配置 -->
+	<aop:config >
+		<!-- 声明切入点表达式 -->
+		<aop:pointcut expression="((execution(* *..*Service.save*(..)) or
+									execution(* *..*Service.update*(..)) or
+									execution(* *..*Service.delete*(..)) or
+									execution(* *..*Service.regist*(..)) or
+									execution(* *..*Service.batch*(..)) or
+									execution(* *..*Service.dispatcher*(..)))) 
+									and (!bean(logServiceImpl))" id="logPointcut"/>
+		
+		<!-- 声明切面类的通知方法 -->
+		<aop:aspect id="logAspect" ref="logRecorder" order="10">
+			<aop:around method="logRecord" pointcut-ref="logPointcut"/>
+		</aop:aspect>
+	</aop:config>
+	
+
+	<bean id="logCreateTableListener" class="com.hanvon.survey.log.listener.LogCreateTableListener"></bean>
+	
+	<!-- 定义任务的详细Bean -->
+	<bean id="jobDetailBean" class="org.springframework.scheduling.quartz.JobDetailBean">
+		<property name="jobClass" value="com.hanvon.survey.log.quartz.AutoCreateTableJobBean"/>
+		<!-- 给任务bean注入属性 -->
+		<property name="jobDataMap">
+			<map>
+				<entry key="logService" value-ref="logServiceImpl"/>
+			</map>
+		</property>
+	</bean>
+	
+	<!-- 设置触发器 -->
+	<bean id="triggerBean" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="jobDetailBean"/>
+		<!-- 0 0 0 15 * ? -->
+		<!-- <property name="cronExpression" value="*/10 * * * * ?"/> -->
+		<property name="cronExpression" value="0 0 0 15 * ?"/>
+	</bean>
+	
+	<!-- 声明调度工厂Bean -->
+	<bean id="schedulerFactoryBean" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="triggerBean"/>
+			</list>
+		</property>
+	</bean>
+		
+		
+	<!-- 配置缓存抽象： -->
+	
+	<bean id="methodKeyGenerator" class="com.hanvon.survey.ehcache.MethodKeyGenerator"></bean>
+	
+	<bean id="ehCacheManagerFactoryBean" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="classpath:ehcache.xml"></property>
+	</bean>	
+	
+	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+		<property name="cacheManager" ref="ehCacheManagerFactoryBean"/>
+	</bean>
+	
+	<!-- 
+		配置缓存通知：
+		id : 通知id
+		cache-manager : 设置缓存管理器（切面类）将数据往缓存中方法，以及从缓存中获取，清理缓存；
+		key-generator : 用于声明缓存Map集合key
+	 -->
+	<cache:advice id="cacheAdviceId" cache-manager="cacheManager" key-generator="methodKeyGenerator">
+		<!-- 
+			cache : 设置缓存方法的返回结果，存放到哪一个名称的缓存区中；对应ehcache.xml文件中的<cache>标签的name属性值
+		 -->
+		<cache:caching cache="surveyCache">	
+			<!-- 配置哪些方法的返回结果需要往缓存中存储 -->
+			<!-- 需要考虑，那么方法的返回结果适合使用二级缓存 -->
+			<cache:cacheable method="servletPathExists"/>
+		</cache:caching>
+	</cache:advice>
+	
+	<aop:config>
+		<!-- 匹配哪些方法需要参与二级缓存操作 -->
+		<aop:pointcut expression="execution(* *..*Service.get*(..)) or
+									execution(* *..*Service.query*(..)) or
+									execution(* *..*Service.servletPathExists(..))" id="ehCachePointcut"/>
+		<aop:advisor advice-ref="cacheAdviceId" pointcut-ref="ehCachePointcut"/>
+	</aop:config>
+		
+
+</beans>
