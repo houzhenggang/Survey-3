@@ -65,8 +65,7 @@ public class BagHandler {
 		Integer userId = user.getUserId();
 		
 		Page<Survey> unCompletedSurveyList = surveyService.queryMyUnCompletedSurvey(pageNoStr, userId);
-		//bagService.queryMoveAndCopySurveyList(pageNoStr,userId);//不需要增加新接口方法了，使用原来提供好的
-		
+
 		map.put(GlobalSettings.PAGE, unCompletedSurveyList);
 		
 		return "guest/bag_move_copy_list";
